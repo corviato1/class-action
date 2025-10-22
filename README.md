@@ -1,7 +1,7 @@
 # To Do:
 
 - review Terms of Service Text found at /legal/terms
--
+- review Privacy statement found at /legal/privacy
 
 # class-action
 
