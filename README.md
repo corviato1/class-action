@@ -3,6 +3,12 @@
 - kick starter or go fund me for class action law suits.
 - Summary: a website for those who have been wronged can come together, pool resources, and try to get their pound of flesh, or at the very least remedy great injustices. 
 
+
+## Examples
+1. Metacritic
+2. Kadnea: https://x.com/Kaddex_Official/status/1980780263023210758
+
+
 ### Urls Held:
 
 - gofundaclassaction.com
