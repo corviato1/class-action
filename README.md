@@ -1,3 +1,8 @@
+# To Do:
+
+- review Terms of Service Text found at /legal/terms
+-
+
 # class-action
 
 kick starter or go fund me for class action law suits.
