@@ -1,15 +1,202 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  emailVerified  DateTime?
+  hashedPassword String?
+  role           Role      @default(BACKER)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  profile  Profile?
+  totp     TOTPSecret?
+  sessions Session[]
+  pledges  Pledge[]
+  cases    Case[]    @relation("OrganizerCases")
+  comments Comment[]
+}
+
+enum Role {
+  BACKER
+  ORGANIZER
+  COUNSEL
+  ADMIN
+  COMPLIANCE
+}
+
+model Profile {
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  user     User    @relation(fields: [userId], references: [id])
+  name     String?
+  country  String?
+  timezone String?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  userAgent String?
+  ip        String?
+}
+
+model VerificationToken {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+}
+
+model TOTPSecret {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  secretHash String
+  enabled    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Case {
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  title        String
+  narrative    String     @db.Text
+  jurisdiction String
+  goalCents    Int
+  raisedCents  Int        @default(0)
+  status       CaseStatus @default(DRAFT)
+  visibility   Visibility @default(PUBLIC)
+  organizerId  String
+  organizer    User       @relation("OrganizerCases", fields: [organizerId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  documents    CaseDocument[]
+  budgets      BudgetItem[]
+  pledges      Pledge[]
+  updates      Update[]
+  comments     Comment[]
+  escrowLedger EscrowLedger[]
+}
+
+enum CaseStatus {
+  DRAFT
+  REVIEW
+  LIVE
+  PAUSED
+  CLOSED
+  REJECTED
+}
+
+enum Visibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+model CaseDocument {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id])
+  key       String
+  kind      String
+  redacted  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model BudgetItem {
+  id          String @id @default(cuid())
+  caseId      String
+  case        Case   @relation(fields: [caseId], references: [id])
+  label       String
+  amountCents Int
+}
+
+model Pledge {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  caseId      String
+  case        Case         @relation(fields: [caseId], references: [id])
+  amountCents Int
+  currency    String       @default("usd")
+  status      PledgeStatus @default(PENDING)
+  provider    String
+  providerRef String?
+  createdAt   DateTime     @default(now())
+}
+
+enum PledgeStatus {
+  PENDING
+  SUCCEEDED
+  REFUNDED
+  DISPUTED
+  FAILED
+}
+
+model EscrowLedger {
+  id          String   @id @default(cuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id])
+  deltaCents  Int
+  reason      String
+  providerRef String?
+  createdAt   DateTime @default(now())
+}
+
+model Update {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id])
+  title     String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  body      String   @db.Text
+  flagged   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model WebhookEvent {
+  id             String    @id @default(cuid())
+  provider       String
+  eventType      String
+  payloadHash    String
+  idempotencyKey String    @unique
+  receivedAt     DateTime  @default(now())
+  processedAt    DateTime?
+  success        Boolean   @default(false)
+  error          String?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
 }
